@@ -37,7 +37,7 @@ void XorOp(char * S1, const char * S2, const int _size){
     S1[i] = S1[i] ^ S2[i];
     
   }
-  Serial.println(S1);
+  //Serial.println(S1);
 }
 
 // Please enter your sensitive data in the Secret tab or arduino_secrets.h
@@ -48,13 +48,18 @@ String appKey;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  SerialLoRa.begin(19200);
   XorOp(key, Crypt, 16);
-  appKey = Binary_to_String(key, 8);
-  
-  
+  int val = key[0];
+  Serial.println(val);
+  appKey = Binary_to_String(key, 16);
+
   while (!Serial)
-  delay(10);     // will pause Zero, Leonardo, etc until serial console opens
+    delay(10);     // will pause Zero, Leonardo, etc until serial console opens
   Serial.println(appKey);
+  while(!SerialLoRa)
+    delay(10);
+  Serial.println("boot to start module");
   /*
   Serial.println("SHT31 test");
   if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
@@ -69,7 +74,7 @@ void setup() {
     Serial.println("DISABLED");*/
 
   // change this to your regional band (eg. US915, AS923, ...)
-  if (!modem.begin(EU868)) {
+  if (!modem.begin(EU868)) { 
     Serial.println("Failed to start module");
     while (1) {}
   };
@@ -77,27 +82,35 @@ void setup() {
   Serial.println(modem.version());
   Serial.print("Your device EUI is: ");
   Serial.println(modem.deviceEUI());
-
-  int connected = modem.joinOTAA(appEui, appKey);
+  
+  //int connected = modem.joinOTAA(appEui, appKey);
+  /*
   if (!connected) {
     Serial.println("Something went wrong; are you indoor? Move near a window and retry");
     while (1) {}
   }
-
+  */
   // Set poll interval to 60 secs.
   //modem.minPollInterval(60);
   modem.dataRate(3);
+  //delay(100);
+  
   // NOTE: independent of this setting, the modem will
   // not allow sending more than one message every 2 minutes,
   // this is enforced by firmware and can not be changed.
 }
 
 void loop() {
-  //Serial.println();
-  //Serial.println("Enter a message to send to network");
-  //Serial.println("(make sure that end-of-line 'NL' is enabled)");
+  
 
-  //while (!Serial.available());
+  if(Serial.available() > 0){
+    char c = Serial.read();
+    SerialLoRa.print(c);
+  }
+  if(SerialLoRa.available() > 0){
+    char c = SerialLoRa.read();
+    Serial.print(c);
+  }
   /*
   float t = sht31.readTemperature();
   float h = sht31.readHumidity();
@@ -112,10 +125,10 @@ void loop() {
     Serial.print("Hum. % = "); Serial.println(h);
   } else { 
     Serial.println("Failed to read humidity");
-  }*/
+  }
   
-  //String msg = Serial.readStringUntil('\n');
-  String msg = String(32);//String(t,2);
+  String msg = Serial.readStringUntil('\n');
+  //String msg = String(32);//String(t,2);
 
   Serial.println();
   Serial.print("Sending: " + msg + " - ");
@@ -126,10 +139,12 @@ void loop() {
   }
   Serial.println();
 
-  int err;
+  int err = 0;
+  /*
   modem.beginPacket();
   modem.print(msg);
   err = modem.endPacket(true);
+  
   if (err > 0) {
     Serial.println("Message sent correctly!");
   } else {
@@ -154,4 +169,5 @@ void loop() {
     Serial.print(" ");
   }
   Serial.println();
+  */
 }
