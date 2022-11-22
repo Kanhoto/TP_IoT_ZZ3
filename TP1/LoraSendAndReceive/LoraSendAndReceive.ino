@@ -12,6 +12,7 @@
 bool enableHeater = false;
 uint8_t loopCnt = 0;
 
+// 8248E25F4C09C294AD25ABDBA50343DC
 const char Crypt[] = {0x82, 0x48, 0xE2, 0x5F, 0x4C, 0x09, 0xC2, 0x94, 0xAD, 0x25, 0xAB, 0xDB, 0xA5, 0x03, 0x43, 0xDC};
 
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
@@ -26,7 +27,9 @@ LoRaModem modem;
 String Binary_to_String(char * tab, int _size){
   String chaine = "";
   for(int i = 0; i<_size; ++i){
-    chaine += String(tab[i],HEX);  
+    char temp[2];
+    sprintf(temp, "%02X", tab[i]);
+    chaine += temp; 
   }
   chaine.toUpperCase();
   return chaine;
@@ -41,6 +44,7 @@ void XorOp(char * S1, const char * S2, const int _size){
 }
 
 // Please enter your sensitive data in the Secret tab or arduino_secrets.h
+
 char key[] = SECRET_APP_KEY;
 String appEui = SECRET_APP_EUI;
 String appKey;
@@ -50,28 +54,30 @@ void setup() {
   Serial.begin(115200);
   SerialLoRa.begin(19200);
   XorOp(key, Crypt, 16);
-  int val = key[0];
-  Serial.println(val);
   appKey = Binary_to_String(key, 16);
-
   while (!Serial)
     delay(10);     // will pause Zero, Leonardo, etc until serial console opens
-  Serial.println(appKey);
+
+  Serial.println("Please input your AppKey :");
+  while(Serial.available() == 0);
+  String chaine = Serial.readString();
+
+  while(!chaine.equals(appKey + "\r\n")){
+    Serial.println("\nWrong App Key");
+    Serial.println("input : " + chaine + "appKey : " + appKey);
+    Serial.println("Please input your AppKey :");
+    while(Serial.available() == 0);
+    chaine = Serial.readString();
+  }
+  //Serial.println(appKey);
   while(!SerialLoRa)
     delay(10);
   Serial.println("boot to start module");
-  /*
-  Serial.println("SHT31 test");
-  if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
-    Serial.println("Couldn't find SHT31");
-    while (1) delay(1);
-  }
 
-  Serial.print("Heater Enabled State: ");
-  if (sht31.isHeaterEnabled())
-    Serial.println("ENABLED");
-  else
-    Serial.println("DISABLED");*/
+  for(int i=0; i<appKey.length(); ++i){
+    SerialLoRa.write("AT$NVM " + i + key[i]);
+  }
+  
 
   // change this to your regional band (eg. US915, AS923, ...)
   if (!modem.begin(EU868)) { 
@@ -83,13 +89,13 @@ void setup() {
   Serial.print("Your device EUI is: ");
   Serial.println(modem.deviceEUI());
   
-  //int connected = modem.joinOTAA(appEui, appKey);
-  /*
+  int connected = modem.joinOTAA(appEui, appKey);
+  
   if (!connected) {
     Serial.println("Something went wrong; are you indoor? Move near a window and retry");
     while (1) {}
   }
-  */
+  
   // Set poll interval to 60 secs.
   //modem.minPollInterval(60);
   modem.dataRate(3);
@@ -101,8 +107,6 @@ void setup() {
 }
 
 void loop() {
-  
-
   if(Serial.available() > 0){
     char c = Serial.read();
     SerialLoRa.print(c);
@@ -111,6 +115,7 @@ void loop() {
     char c = SerialLoRa.read();
     Serial.print(c);
   }
+
   /*
   float t = sht31.readTemperature();
   float h = sht31.readHumidity();
