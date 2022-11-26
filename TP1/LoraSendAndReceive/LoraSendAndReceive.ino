@@ -1,9 +1,3 @@
-/*
-  Lora Send And Receive
-  This sketch demonstrates how to send and receive data with the MKR WAN 1300/1310 LoRa module.
-  This example code is in the public domain.
-*/
-
 #include <MKRWAN.h>
 #include <Arduino.h>
 #include <Wire.h>
@@ -12,19 +6,21 @@
 bool enableHeater = false;
 uint8_t loopCnt = 0;
 
-// 8248E25F4C09C294AD25ABDBA50343DC
+//8248E25F4C09C294AD25ABDBA50343DC
 const char Crypt[] = {0x82, 0x48, 0xE2, 0x5F, 0x4C, 0x09, 0xC2, 0x94, 0xAD, 0x25, 0xAB, 0xDB, 0xA5, 0x03, 0x43, 0xDC};
-
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
-
 LoRaModem modem;
-
-// Uncomment if using the Murata chip as a module
-// LoRaModem modem(Serial1);
 
 #include "arduino_secrets.h"
 
-String Binary_to_String(char * tab, int _size){
+/********************************************************************************************
+*  Function : Binary_to_String                                                              *
+*                                                                                           *
+*  param : Char *, int                                                                      *
+*                                                                                           *
+*  Execution : Convert an char array of Hexadecimal into their ASCII equivalent in a String *
+*********************************************************************************************/
+String Binary_to_String(char * tab, const int _size){
   String chaine = "";
   for(int i = 0; i<_size; ++i){
     char temp[2];
@@ -35,15 +31,19 @@ String Binary_to_String(char * tab, int _size){
   return chaine;
 }
 
+/*********************************************************
+*  Function : XorOp                                      *
+*                                                        *
+*  param : Char *, const char *, const int               *
+*                                                        *
+*  Execution : Do a XOR operation between two char array *
+**********************************************************/
 void XorOp(char * S1, const char * S2, const int _size){
   for(int i = 0; i< _size; ++i){
     S1[i] = S1[i] ^ S2[i];
     
   }
-  //Serial.println(S1);
 }
-
-// Please enter your sensitive data in the Secret tab or arduino_secrets.h
 
 char key[] = SECRET_APP_KEY;
 String appEui = SECRET_APP_EUI;
