@@ -2,85 +2,89 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "Adafruit_SHT31.h"
+#include "arduino_secrets.h"
 
+/*******************
+* Global variables *
+********************/
 bool enableHeater = false;
 uint8_t loopCnt = 0;
-
 //8248E25F4C09C294AD25ABDBA50343DC
 const char Crypt[] = {0x82, 0x48, 0xE2, 0x5F, 0x4C, 0x09, 0xC2, 0x94, 0xAD, 0x25, 0xAB, 0xDB, 0xA5, 0x03, 0x43, 0xDC};
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 LoRaModem modem;
+char key[] = SECRET_APP_KEY;
+String appEui = SECRET_APP_EUI;
+String appKey;
 
-#include "arduino_secrets.h"
-
-/********************************************************************************************
-*  Function : Binary_to_String                                                              *
-*                                                                                           *
-*  param : Char *, int                                                                      *
-*                                                                                           *
-*  Execution : Convert an char array of Hexadecimal into their ASCII equivalent in a String *
-*********************************************************************************************/
+/******************************************************************************************
+* Function : Binary_to_String                                                             *
+*                                                                                         *
+* param : Char *, int                                                                     *
+*                                                                                         *
+* Execution : Convert a char array of Hexadecimal into their ASCII equivalent in a String *
+*******************************************************************************************/
 String Binary_to_String(char * tab, const int _size){
   String chaine = "";
   for(int i = 0; i<_size; ++i){
     char temp[2];
     sprintf(temp, "%02X", tab[i]);
-    chaine += temp; 
+    chaine += temp;
   }
   chaine.toUpperCase();
   return chaine;
 }
 
-/*********************************************************
-*  Function : XorOp                                      *
-*                                                        *
-*  param : Char *, const char *, const int               *
-*                                                        *
-*  Execution : Do a XOR operation between two char array *
-**********************************************************/
+/********************************************************
+* Function : XorOp                                      *
+*                                                       *
+* param : Char *, const char *, const int               *
+*                                                       *
+* Execution : Do a XOR operation between two char array *
+*********************************************************/
 void XorOp(char * S1, const char * S2, const int _size){
   for(int i = 0; i< _size; ++i){
     S1[i] = S1[i] ^ S2[i];
-    
   }
 }
 
-char key[] = SECRET_APP_KEY;
-String appEui = SECRET_APP_EUI;
-String appKey;
-
 void setup() {
-  // put your setup code here, to run once:
+  /*******************************
+  * Init of Serial communication *
+  ********************************/
   Serial.begin(115200);
   SerialLoRa.begin(19200);
-  XorOp(key, Crypt, 16);
-  appKey = Binary_to_String(key, 16);
   while (!Serial)
     delay(10);     // will pause Zero, Leonardo, etc until serial console opens
+  while(!SerialLoRa)
+    delay(10);
 
+  /*********************
+  * Decrypting the key *
+  **********************/
+  XorOp(key, Crypt, 16);
+  appKey = Binary_to_String(key, 16);
+  
+  /********************************************
+  * Waiting for user to input Application key *
+  *********************************************/
   Serial.println("Please input your AppKey :");
   while(Serial.available() == 0);
   String chaine = Serial.readString();
 
   while(!chaine.equals(appKey + "\r\n")){
     Serial.println("\nWrong App Key");
-    Serial.println("input : " + chaine + "appKey : " + appKey);
     Serial.println("Please input your AppKey :");
     while(Serial.available() == 0);
     chaine = Serial.readString();
   }
-  //Serial.println(appKey);
-  while(!SerialLoRa)
-    delay(10);
+
+  /*******************************************
+  * Starting modem with Europe configuration *
+  ********************************************/
   Serial.println("boot to start module");
-
-  for(int i=0; i<appKey.length(); ++i){
-    SerialLoRa.write("AT$NVM " + i + key[i]);
-  }
-  
-
   // change this to your regional band (eg. US915, AS923, ...)
-  if (!modem.begin(EU868)) { 
+  if (!modem.begin(EU868)) {
     Serial.println("Failed to start module");
     while (1) {}
   };
@@ -88,25 +92,32 @@ void setup() {
   Serial.println(modem.version());
   Serial.print("Your device EUI is: ");
   Serial.println(modem.deviceEUI());
-  
+
+  /*****************************************************
+  * Starting to write Application key inside the modem *
+  ******************************************************/
+  for(int i=0; i<appKey.length(); ++i){
+    SerialLoRa.write("AT$NVM " + i + key[i]);
+  }
+
+  /**********************************************************
+  * Connecting the modem to a LoRaWAN network (like Helium) *
+  ***********************************************************/
   int connected = modem.joinOTAA(appEui, appKey);
-  
   if (!connected) {
     Serial.println("Something went wrong; are you indoor? Move near a window and retry");
     while (1) {}
   }
-  
-  // Set poll interval to 60 secs.
-  //modem.minPollInterval(60);
+
   modem.dataRate(3);
-  //delay(100);
-  
-  // NOTE: independent of this setting, the modem will
-  // not allow sending more than one message every 2 minutes,
-  // this is enforced by firmware and can not be changed.
 }
 
 void loop() {
+  /************************************************************************
+  * Testing part                                                          *
+  *                                                                       *
+  * Used to communicate directly with the modem using Arduino ide monitor *
+  *************************************************************************/
   if(Serial.available() > 0){
     char c = Serial.read();
     SerialLoRa.print(c);
@@ -122,16 +133,16 @@ void loop() {
 
   if (! isnan(t)) {  // check if 'is not a number'
     Serial.print("Temp *C = "); Serial.print(t); Serial.print("\t\t");
-  } else { 
+  } else {
     Serial.println("Failed to read temperature");
   }
-  
+
   if (! isnan(h)) {  // check if 'is not a number'
     Serial.print("Hum. % = "); Serial.println(h);
-  } else { 
+  } else {
     Serial.println("Failed to read humidity");
   }
-  
+
   String msg = Serial.readStringUntil('\n');
   //String msg = String(32);//String(t,2);
 
@@ -149,7 +160,7 @@ void loop() {
   modem.beginPacket();
   modem.print(msg);
   err = modem.endPacket(true);
-  
+
   if (err > 0) {
     Serial.println("Message sent correctly!");
   } else {
