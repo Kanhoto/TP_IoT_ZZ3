@@ -23,9 +23,9 @@ void setup() {
   while(!SerialLoRa)
     delay(10);
   
-  /*******************************************************************
-  * Checking the flag in the nvm, if the user already inserted a key *
-  ********************************************************************/
+  /**********************************************************************************
+  * Checking the flag in the nvm at adr 0 to see if the user already inserted a key *
+  ***********************************************************************************/
   String command = "AT$NVM 0\r\n";
   SerialLoRa.print(command);
   while(SerialLoRa.available() == 0);
