@@ -7,9 +7,7 @@
 /*******************
 * Global variables *
 ********************/
-bool enableHeater = false;
 uint8_t loopCnt = 0;
-Adafruit_SHT31 sht31 = Adafruit_SHT31();
 LoRaModem modem;
 String appEui = SECRET_APP_EUI;
 String appKey;
@@ -25,9 +23,9 @@ void setup() {
   while(!SerialLoRa)
     delay(10);
   
-  /********************************************************
-  * Looking in the nvm if the user already inserted a key *
-  *********************************************************/
+  /*******************************************************************
+  * Checking the flag in the nvm, if the user already inserted a key *
+  ********************************************************************/
   String command = "AT$NVM 0\r\n";
   SerialLoRa.print(command);
   while(SerialLoRa.available() == 0);
@@ -42,9 +40,9 @@ void setup() {
     while(Serial.available() == 0);
     String chaine = Serial.readString();
 
-    /*******************************************************************
-    * Changing the flag so it won't ask another time to insert the key *
-    ********************************************************************/
+    /****************************************************************
+    * Writing a flag so it won't ask another time to insert the key *
+    *****************************************************************/
     command = "AT$NVM 0,1\r\n";
     Serial.println(command);
     SerialLoRa.print(command);
@@ -90,7 +88,8 @@ void setup() {
   /************************************************************************
   * Removing the first and last character of nvm (flag and end of appkey) *
   *************************************************************************/
-  Serial.println(appKey.substring(1,appKey.length()-1));
+  appKey = appKey.substring(1,appKey.length()-1);
+  Serial.println(appKey);
   Serial.println("6EA8568CA821F024293C5C4B06679A4E");
   
   /*******************************************
@@ -116,12 +115,11 @@ void setup() {
   /**********************************************************
   * Connecting the modem to a LoRaWAN network (like Helium) *
   ***********************************************************/
-  /*
   int connected = modem.joinOTAA(appEui, appKey);
   if (!connected) {
     Serial.println("Something went wrong; are you indoor? Move near a window and retry");
     while (1) {}
-  }*/
+  }
 
   /***************************************************
   * Setting modem rate to send data every 15 seconds *
@@ -135,6 +133,7 @@ void loop() {
   *                                                                       *
   * Used to communicate directly with the modem using Arduino ide monitor *
   *************************************************************************/
+  /*
   if(Serial.available() > 0){
     char c = Serial.read();
     SerialLoRa.print(c);
@@ -143,26 +142,12 @@ void loop() {
     char c = SerialLoRa.read();
     Serial.print(c);
   }
-  
-  /*
-  float t = sht31.readTemperature();
-  float h = sht31.readHumidity();
-
-  if (! isnan(t)) {  // check if 'is not a number'
-    Serial.print("Temp *C = "); Serial.print(t); Serial.print("\t\t");
-  } else {
-    Serial.println("Failed to read temperature");
-  }
-
-  if (! isnan(h)) {  // check if 'is not a number'
-    Serial.print("Hum. % = "); Serial.println(h);
-  } else {
-    Serial.println("Failed to read humidity");
-  }
   */
-  /*
-  //String msg = Serial.readStringUntil('\n');
-  String msg = String(32);//String(t,2);
+  
+  /***********************
+  * Creating the message *
+  ************************/
+  String msg = String(32);
 
   Serial.println();
   Serial.print("Sending: " + msg + " - ");
@@ -175,6 +160,9 @@ void loop() {
 
   int err = 0;
   
+  /*************************************
+  * Sending the message with the modem *
+  **************************************/
   modem.beginPacket();
   modem.print(msg);
   err = modem.endPacket(true);
@@ -187,6 +175,10 @@ void loop() {
     Serial.println("it may vary from 1 message every couple of seconds to 1 message every minute)");
   }
   delay(20000);
+
+  /*******************************************************
+  * Reading the message sent back by Helium to the modem *
+  ********************************************************/
   if (!modem.available()) {
     Serial.println("No downlink message received at this time.");
     return;
@@ -203,5 +195,4 @@ void loop() {
     Serial.print(" ");
   }
   Serial.println();
-  */
 }
