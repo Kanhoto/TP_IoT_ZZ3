@@ -66,12 +66,12 @@ void setup() {
 
   
   int ind = 0;
+  Serial.println("Wait for the AppKey to be retrieved (can take few dozens of seconds)");
   while(lorastr.substring(4,6).toInt() != (int)'$'){
     /**************************************
     * Retrieving the app key from the nvm *
     ***************************************/
     command = "AT$NVM " + String(ind) + "\r\n";
-    Serial.println(command);
     SerialLoRa.print(command);
     while(SerialLoRa.available() == 0);
     lorastr = SerialLoRa.readString();
@@ -79,8 +79,6 @@ void setup() {
     /**********************************************************
     * Parsing only the important part of LoRa returned string *
     ***********************************************************/
-    Serial.println(lorastr.substring(4,6));
-    Serial.println((char)lorastr.substring(4,6).toInt());
     appKey += (char)lorastr.substring(4,6).toInt();
     ++ind;
   }
@@ -89,8 +87,6 @@ void setup() {
   * Removing the first and last character of nvm (flag and end of appkey) *
   *************************************************************************/
   appKey = appKey.substring(1,appKey.length()-1);
-  Serial.println(appKey);
-  Serial.println("6EA8568CA821F024293C5C4B06679A4E");
   
   /*******************************************
   * Starting modem with Europe configuration *
@@ -128,11 +124,11 @@ void setup() {
 }
 
 void loop() {
-  /************************************************************************
-  * Testing part                                                          *
-  *                                                                       *
-  * Used to communicate directly with the modem using Arduino ide monitor *
-  *************************************************************************/
+  /****************************************************************
+  *                      Testing part                             *
+  *                                                               *
+  * Communicate directly with the modem using Arduino ide monitor *
+  *****************************************************************/
   /*
   if(Serial.available() > 0){
     char c = Serial.read();
