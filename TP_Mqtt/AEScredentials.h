@@ -20,9 +20,9 @@ cipheredCounter(int) : returned the ciphered counter (oblivious)
 const uint8_t key[16]={0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,0x38, 0x39, 0x65, 0x66, 0x67, 0x68, 0x69, 0x70};
 
 // Counter for AES testing
-byte cpt = 225;
+uint8_t cpt = 225;
 
-const byte* cipheredCounter(int cpt){
+const uint8_t* cipheredCounter(int cpt){
   
 }
 
