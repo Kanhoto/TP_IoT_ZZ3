@@ -268,18 +268,15 @@ void loop() {
   static uint32_t lastEmit = millis() - EMIT_RATE;
   //static uint8_t frame[1] = { 0 };
 
-  
   //plaintext[16] contain the text we need to encrypt
-  uint8_t plaintext[16] = "1234567890abcde";
-  //cypher[16] stores the encrypted text
-  uint8_t* cypher;
+  uint8_t cypher[16] = "1234567890abcde";
   //creating an object of AES128 class
-  AES128 aes128;
+  //AES128 aes128;
 
   if ((millis() - lastEmit) > EMIT_RATE) {
     // Encrypt the plaintext
     //aes128.encryptBlock(cypher,plaintext);//cypher->output block and plaintext->input block
-    cypher = XORs(plaintext, key);
+    XORs(cypher, key);
 
     modem.beginPacket();
     modem.write(cypher, sizeof(cypher));

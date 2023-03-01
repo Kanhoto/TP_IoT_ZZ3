@@ -29,12 +29,11 @@ void displayByteArray(const uint8_t* array){
 
 // XOR operand between two byte array
 // (Do not verify error, so don't try impossible things (^w^))
-uint8_t* XORs(const uint8_t* b1, const uint8_t* b2){
-  int len = sizeof(b1)/sizeof(uint8_t);
-  uint8_t* result = (uint8_t*)malloc(sizeof(uint8_t)*len);
+void XORs(const uint8_t* src, const uint8_t* dest){
+  int len = sizeof(src)/sizeof(uint8_t);
 
   for(int i=0; i<len; ++i){
-    result[i] = b1[i] ^ b2[i];
+    dest[i] = src[i] ^ dst[i];
   }
 
   return result;
